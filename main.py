@@ -1,36 +1,11 @@
 import numpy as np
+import pandas as pd
+
 from lagrange import polinom_lagrange
 from newton import polinom_newton
 from functions import f, opt_nodes_formula
 from splines import spline_S10, spline_S21, spline_S32
 from visual import visualize, culculation_error_graph
-
-
-def print_header():
-    print(f"{'Количество узлов (n)':<25}"
-          f"{'Количество проверочных точек (m)':<35}"
-          f"{'Максимальное отклонение (RLn)':<50}"
-          f"{'Максимальное отклонение (RLoptn)':<40}"
-          f"{'Максимальное отклонение (RNn)':<80}"
-          f"{'Максимальное отклонение (RNoptn)':<80}")
-    print("-"*300)
-
-
-def print_table(n, m, rln, rlopt, rnn, rnoptn):
-    print(f"{n:<25}{m:<35}{rln:<50.6f}{rlopt:<40.6f}{rnn:<80.6f}{rnoptn:<80.6f}")
-
-
-def print_header_spline():
-    print(f"{'Количество узлов (n)':<25}"
-          f"{'Количество проверочных точек (k)':<35}"
-          f"{'RS10':<20}"
-          f"{'RS21':<20}"
-          f"{'RS32':<20}")
-    print("-" * 120)
-
-
-def print_table_spline(n, k, rs10, rs21, rs32):
-    print(f"{n:<25}{k:<35}{rs10:<20.6f}{rs21:<20.6f}{rs32:<20.6f}")
 
 
 def main():
@@ -39,12 +14,12 @@ def main():
 
     number_of_nodes = [3, 4, 5, 7, 10, 30, 40, 50, 80, 100, 150, 200]
 
-    print_header()
-    # print_header_spline()
+    interpolation_table = []
+    spline_table = []
 
     for n in number_of_nodes:
         m = max(min(n * n, 4000), 100)
-        x = np.linspace(a, b, m)  # ЭТИ ТОЧКИ ПРОСТО ПОДСТАВЛЯЕМ, ПО НИМ НИКАКИХ ПОЛИНОМОВ НЕ СТРОИТЬ
+        x = np.linspace(a, b, m)
         x_equidistant_nodes = np.linspace(a, b, n)
         x_opt_nodes = opt_nodes_formula(a, b, n)
 
@@ -60,7 +35,6 @@ def main():
 
         Rln = np.max(np.abs(f(x) - L_n(x)))
         Rlopt = np.max(np.abs(f(x) - Lopt_n(x)))
-
 
         visualize(
             x,
@@ -82,7 +56,14 @@ def main():
         Rnn = np.max(np.abs(y - N_n(x)))
         Rnoptn = np.max(np.abs(y - Nopt_n(x)))
 
-        print_table(n, m, Rln, Rlopt, Rnn, Rnoptn)
+        interpolation_table.append({
+            "Количество узлов (n)": n,
+            "Количество проверочных точек (m)": m,
+            "Максимальное отклонение (RLn)": Rln,
+            "Максимальное отклонение (RLoptn)": Rlopt,
+            "Максимальное отклонение (RNn)": Rnn,
+            "Максимальное отклонение (RNoptn)": Rnoptn
+        })
 
         visualize(
             x,
@@ -119,12 +100,29 @@ def main():
         RS21 = np.max(np.abs(y - S21(x)))
         RS32 = np.max(np.abs(y - S32(x)))
 
-        # print_table_spline(n, m, RS10, RS21, RS32)
+        spline_table.append({
+            "Количество узлов (n)": n,
+            "Количество проверочных точек (k)": m,
+            "RS10": RS10,
+            "RS21": RS21,
+            "RS32": RS32
+        })
 
         err_lagr = np.abs(y - L_n(x))
         err_spline = np.abs(y - S32(x))
 
         culculation_error_graph(x, n, err_lagr, err_spline, f"error_plot_{n}_nodes.jpeg")
+
+    df_interpolation = pd.DataFrame(interpolation_table)
+    df_spline = pd.DataFrame(spline_table)
+    df_interpolation.to_csv("interpolation_table.csv", index=False)
+    df_spline.to_csv("spline_table", index=False)
+
+    '''print("Таблица для интерполяции:")
+    print(df_interpolation.round(6).to_string(index=False))
+
+    print("\nТаблица для сплайнов:")
+    print(df_spline.round(6).to_string(index=False))'''
 
 
 main()
